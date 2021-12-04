@@ -10,7 +10,7 @@ fn main() {
     let part_1_answer = part1(&parsed_lines);
     let part_2_answer = part2(&parsed_lines);
     println!("Part 1: {}", part_1_answer);
-    println!("Part 1: {}", part_2_answer);
+    println!("Part 2: {}", part_2_answer);
 }
 
 fn read_file_to_vec(filename: String) -> Vec<String> {
@@ -49,134 +49,47 @@ fn part1(lines: &Vec<String>) -> u32 {
     gamma_rate * epsilon_rate
 }
 
-fn part2(lines: &Vec<String>) -> u32 {
-    let total_bits = lines[0].len();
-    let mut one_counts: Vec<u32> = vec![0; total_bits];
-    for line in lines {
-        for (i, c) in line.chars().enumerate() {
-            if c == '1' {
-                one_counts[i] += 1;
-            }
-        }
-    }
-    let mut majority_threshold: u32 = (lines.len() as f64 / 2 as f64).ceil() as u32;
-    let mut kept_indices = HashSet::new();
-    let mut oxygen_generator_rating: Option<u32> = None;
-    let mut co2_scrubber_rating: Option<u32> = None;
-    for i in 0..lines.len() {
-        kept_indices.insert(i);
-    }
-    let mut iters = 0;
-    println!("Starting the while loop!");
-    while oxygen_generator_rating == None && iters < 10000 {
-        for current_index in 0..total_bits {
-            let mut ones_at_index = 0;
-            // println!(
-            //     "Checking bit index {} in {} entries, majority threshold is {}",
-            //     current_index,
-            //     kept_indices.len(),
-            //     majority_threshold
-            // );
-            for i in &kept_indices {
-                let line = &lines[i.clone()];
-                if line.chars().nth(current_index).unwrap() == '1' {
-                    ones_at_index += 1;
-                }
-            }
-            let mut indices_to_remove = HashSet::new();
-            if ones_at_index >= majority_threshold {
-                // println!("The bit at {} must be a 1", current_index);
-                for i in &kept_indices {
-                    if lines[i.clone()].chars().nth(current_index).unwrap() != '1' {
-                        indices_to_remove.insert(i.clone());
-                    }
-                }
-            } else {
-                // println!("The bit at {} must be a 1", current_index);
-                for i in &kept_indices {
-                    if lines[i.clone()].chars().nth(current_index).unwrap() == '1' {
-                        indices_to_remove.insert(i.clone());
-                    }
-                }
-            }
-            for i in indices_to_remove {
-                // println!("Removing {}-{}", i, lines[i]);
-                kept_indices.remove(&i);
-            }
-            majority_threshold = (kept_indices.len() as f64 / 2_f64).ceil() as u32;
-            if kept_indices.len() == 1 {
-                let only_index = kept_indices.iter().next().unwrap().clone();
-                oxygen_generator_rating =
-                    Option::Some(u32::from_str_radix(&lines[only_index], 2).unwrap());
-                println!("Found it! at index {}: {}", only_index, &lines[only_index]);
-            }
-            // println!(
-            //     "{} remaining after iteration {} on bit {}",
-            //     kept_indices.len(),
-            //     iters,
-            //     current_index
-            // );
-        }
-        iters += 1;
-    }
+fn part2_recursive(lines: &Vec<String>) -> u32 {
+    let oxygen_generator_rating = filter_part_2_recursive(lines.clone(), 0, false);
+    let co2_scrubber_rating = filter_part_2_recursive(lines.clone(), 0, true);
+    oxygen_generator_rating * co2_scrubber_rating
+}
 
-    for i in 0..lines.len() {
-        kept_indices.insert(i);
+fn filter_part_2_recursive(lines: Vec<String>, position: usize, negate: bool) -> u32 {
+    if lines.len() == 1 {
+        return u32::from_str_radix(lines.iter().next().unwrap(), 2).unwrap();
     }
-    let mut iters = 0;
-    println!("Starting the 2nd while loop!");
-    while co2_scrubber_rating == None && iters < 10000 {
-        for current_index in 0..total_bits {
-            let mut ones_at_index = 0;
-            // println!(
-            //     "Checking bit index {} in {} entries, majority threshold is {}",
-            //     current_index,
-            //     kept_indices.len(),
-            //     majority_threshold
-            // );
-            for i in &kept_indices {
-                let line = &lines[i.clone()];
-                if line.chars().nth(current_index).unwrap() == '1' {
-                    ones_at_index += 1;
+    let most_common_bit = if negate {
+        !most_common_bit_at_position(&lines, position)
+    } else {
+        most_common_bit_at_position(&lines, position)
+    };
+    return filter_part_2_recursive(
+        lines
+            .iter()
+            .filter(|l| {
+                let bit_at_pos = l.chars().nth(position).unwrap();
+                if most_common_bit {
+                    bit_at_pos == '1'
+                } else {
+                    bit_at_pos == '0'
                 }
-            }
-            let mut indices_to_remove = HashSet::new();
-            if ones_at_index >= majority_threshold {
-                // println!("The bit at {} must be a 1", current_index);
-                for i in &kept_indices {
-                    if lines[i.clone()].chars().nth(current_index).unwrap() != '0' {
-                        indices_to_remove.insert(i.clone());
-                    }
-                }
-            } else {
-                // println!("The bit at {} must be a 1", current_index);
-                for i in &kept_indices {
-                    if lines[i.clone()].chars().nth(current_index).unwrap() == '0' {
-                        indices_to_remove.insert(i.clone());
-                    }
-                }
-            }
-            for i in indices_to_remove {
-                // println!("Removing {}-{}", i, lines[i]);
-                kept_indices.remove(&i);
-            }
-            majority_threshold = (kept_indices.len() as f64 / 2_f64).ceil() as u32;
-            if kept_indices.len() == 1 {
-                let only_index = kept_indices.iter().next().unwrap().clone();
-                co2_scrubber_rating =
-                    Option::Some(u32::from_str_radix(&lines[only_index], 2).unwrap());
-                println!("Found it! at index {}: {}", only_index, &lines[only_index]);
-            }
-            // println!(
-            //     "{} remaining after iteration {} on bit {}",
-            //     kept_indices.len(),
-            //     iters,
-            //     current_index
-            // );
-        }
-        iters += 1;
-    }
-    oxygen_generator_rating.unwrap() * co2_scrubber_rating.unwrap()
+            })
+            .map(|l| l.clone())
+            .collect(),
+        position + 1,
+        negate,
+    );
+}
+
+// 1 is true, 0 is false
+fn most_common_bit_at_position(lines: &Vec<String>, position: usize) -> bool {
+    let majority_threshold = (lines.len() as f64 / 2_f64).ceil() as usize;
+    lines
+        .iter()
+        .filter(|l| l.chars().nth(position).unwrap() == '1')
+        .count()
+        >= majority_threshold
 }
 
 #[test]
@@ -188,5 +101,5 @@ fn test_part1() {
 #[test]
 fn test_part2() {
     let sample_data = read_file_to_vec(String::from("test_1.txt"));
-    assert_eq!(230, part2(&sample_data));
+    assert_eq!(230, part2_recursive(&sample_data));
 }
