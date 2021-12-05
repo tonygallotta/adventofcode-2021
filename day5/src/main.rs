@@ -1,4 +1,3 @@
-use std::cmp::{max, min};
 use std::collections::HashSet;
 use std::env;
 use std::fs;
@@ -60,29 +59,16 @@ fn overlapping_points(lines: &Vec<String>, include_diagonal: bool) -> u32 {
 
 fn all_points_in_line(start_point: &(u32, u32), end_point: &(u32, u32)) -> Vec<(u32, u32)> {
     let mut points = Vec::new();
-    if start_point.0 == end_point.0 || start_point.1 == end_point.1 {
-        let start_x = min(start_point.0, end_point.0);
-        let end_x = max(start_point.0, end_point.0);
-        let start_y = min(start_point.1, end_point.1);
-        let end_y = max(start_point.1, end_point.1);
-        for x in start_x..=end_x {
-            for y in start_y..=end_y {
-                points.push((x, y));
-            }
-        }
-    } else {
-        let slope_x = (end_point.0 as i32 - start_point.0 as i32).signum();
-        let slope_y = (end_point.1 as i32 - start_point.1 as i32).signum();
-        let mut x = start_point.0;
-        let mut y = start_point.1;
-        while &(x, y) != end_point {
-            points.push((x, y));
-            x = (x as i32 + slope_x) as u32;
-            y = (y as i32 + slope_y) as u32;
-        }
-        // println!("Adding: {},{}", x, y);
+    let slope_x = (end_point.0 as i32 - start_point.0 as i32).signum();
+    let slope_y = (end_point.1 as i32 - start_point.1 as i32).signum();
+    let mut x = start_point.0;
+    let mut y = start_point.1;
+    while &(x, y) != end_point {
         points.push((x, y));
+        x = (x as i32 + slope_x) as u32;
+        y = (y as i32 + slope_y) as u32;
     }
+    points.push((x, y));
     points
 }
 
