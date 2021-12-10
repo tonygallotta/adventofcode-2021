@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::io;
@@ -47,7 +48,23 @@ fn part1(lines: &Vec<String>) -> u64 {
 }
 
 fn part2(lines: &Vec<String>) -> u64 {
-    0
+    let height_map = to_2d(lines);
+    let mut basin_sizes = Vec::new();
+    for i in 0..height_map.len() {
+        for j in 0..height_map[0].len() {
+            if smaller_than_all_neighbors(i, j, &height_map) {
+                basin_sizes.push(basin_size(i, j, &height_map));
+            }
+        }
+    }
+    basin_sizes.sort();
+    basin_sizes.reverse();
+    basin_sizes[0..3]
+        .iter()
+        .copied()
+        .reduce(|a, b| a * b)
+        .unwrap()
+        .clone()
 }
 
 fn to_2d(lines: &Vec<String>) -> Vec<Vec<u64>> {
@@ -88,6 +105,45 @@ fn smaller_than_all_neighbors(i: usize, j: usize, matrix: &Vec<Vec<u64>>) -> boo
             .all(|n| matrix[i][*n] > current_point)
 }
 
+fn basin_size(i: usize, j: usize, matrix: &Vec<Vec<u64>>) -> u64 {
+    let mut visited = HashSet::new();
+    visited.insert((i, j));
+    return dfs(i, j, matrix, &mut visited);
+}
+
+fn dfs(i: usize, j: usize, matrix: &Vec<Vec<u64>>, visited: &mut HashSet<(usize, usize)>) -> u64 {
+    let total_rows = matrix.len();
+    let total_cols = matrix[0].len();
+    let row_neighbors_to_check = if i == 0 {
+        vec![i + 1]
+    } else if i == total_rows - 1 {
+        vec![i - 1]
+    } else {
+        vec![i - 1, i + 1]
+    };
+    let col_neighbors_to_check = if j == 0 {
+        vec![j + 1]
+    } else if j == total_cols - 1 {
+        vec![j - 1]
+    } else {
+        vec![j - 1, j + 1]
+    };
+    let mut neighbor_size = 1;
+    for x in &row_neighbors_to_check {
+        if !visited.contains(&(*x, j)) && matrix[*x][j] != 9 {
+            visited.insert((*x, j));
+            neighbor_size += dfs(*x, j, matrix, visited);
+        }
+    }
+    for y in &col_neighbors_to_check {
+        if !visited.contains(&(i, *y)) && matrix[i][*y] != 9 {
+            visited.insert((i, *y));
+            neighbor_size += dfs(i, *y, matrix, visited);
+        }
+    }
+    return neighbor_size;
+}
+
 #[test]
 fn test_part1() {
     let sample_data = read_file_to_vec(String::from("test.txt"));
@@ -100,5 +156,7 @@ fn test_part1() {
 #[test]
 fn test_part2() {
     let sample_data = read_file_to_vec(String::from("test.txt"));
-    assert_eq!(0, part2(&sample_data));
+    let heatmap = to_2d(&sample_data);
+    assert_eq!(3, basin_size(0, 1, &heatmap));
+    assert_eq!(1134, part2(&sample_data));
 }
