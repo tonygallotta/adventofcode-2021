@@ -115,7 +115,7 @@ fn score_syntax_error(c: char) -> u64 {
 
 fn score_autocomplete(added: &String) -> u64 {
     let mut score = 0;
-    for (i, c) in added.chars().enumerate() {
+    for c in added.chars() {
         score = score * 5
             + match c {
                 ')' => 1,
