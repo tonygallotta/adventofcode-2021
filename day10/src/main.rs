@@ -38,7 +38,30 @@ fn part1(lines: &Vec<String>) -> u64 {
 }
 
 fn part2(lines: &Vec<String>) -> u64 {
-    0
+    let mut autocomplete_scores = Vec::new();
+    for line in lines {
+        if syntax_error_score(line) == 0 {
+            autocomplete_scores.push(score_autocomplete(&autocomplete(line)));
+        }
+    }
+    autocomplete_scores.sort();
+    autocomplete_scores[(autocomplete_scores.len() - 1) / 2]
+}
+
+fn autocomplete(line: &String) -> String {
+    let mut result = String::new();
+    let mut stack: Vec<char> = Vec::new();
+    for c in line.chars() {
+        if is_opener(c) {
+            stack.push(c);
+        } else {
+            stack.pop();
+        }
+    }
+    for opener in stack.iter().rev() {
+        result.push(closer_for(opener.clone()));
+    }
+    result
 }
 
 fn syntax_error_score(line: &String) -> u64 {
@@ -49,7 +72,7 @@ fn syntax_error_score(line: &String) -> u64 {
         } else {
             let opener = stack.pop();
             if opener.is_none() || !is_pair(opener.unwrap(), c) {
-                return score(c);
+                return score_syntax_error(c);
             }
         }
     }
@@ -70,7 +93,17 @@ fn is_pair(opener: char, closer: char) -> bool {
     }
 }
 
-fn score(c: char) -> u64 {
+fn closer_for(opener: char) -> char {
+    match opener {
+        '(' => ')',
+        '[' => ']',
+        '{' => '}',
+        '<' => '>',
+        _ => 'x',
+    }
+}
+
+fn score_syntax_error(c: char) -> u64 {
     match c {
         ')' => 3,
         ']' => 57,
@@ -78,6 +111,21 @@ fn score(c: char) -> u64 {
         '>' => 25137,
         _ => 0,
     }
+}
+
+fn score_autocomplete(added: &String) -> u64 {
+    let mut score = 0;
+    for (i, c) in added.chars().enumerate() {
+        score = score * 5
+            + match c {
+                ')' => 1,
+                ']' => 2,
+                '}' => 3,
+                '>' => 4,
+                _ => 0,
+            }
+    }
+    score
 }
 
 #[test]
@@ -89,5 +137,17 @@ fn test_part1() {
 #[test]
 fn test_part2() {
     let sample_data = read_file_to_vec(String::from("test.txt"));
-    assert_eq!(0, part2(&sample_data));
+    assert_eq!(
+        "}}]])})]",
+        autocomplete(&String::from("[({(<(())[]>[[{[]{<()<>>"))
+    );
+    assert_eq!(
+        0,
+        syntax_error_score(&String::from("[({(<(())[]>[[{[]{<()<>>"))
+    );
+    assert_eq!(
+        288957,
+        score_autocomplete(&autocomplete(&String::from("[({(<(())[]>[[{[]{<()<>>")))
+    );
+    assert_eq!(288957, part2(&sample_data));
 }
